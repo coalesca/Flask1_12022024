@@ -1,5 +1,6 @@
 from flask import Flask
 from flask import request
+from random import choice
 
 app = Flask(__name__)
 app.config['JSON_AS_ASCII'] = False
@@ -93,6 +94,10 @@ def delete(id):
 @app.route("/quotes/count")
 def get_quotes_count():
    return {"count": len(quotes)}, 200
+
+@app.route("/quotes/random")
+def get_random_quote():
+   return choice(quotes), 200
 
 if __name__ == "__main__":
    app.run(debug=True)
