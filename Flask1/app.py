@@ -108,6 +108,27 @@ def get_quotes_count():
 def get_random_quote():
    return choice(quotes), 200
 
+@app.route("/quotes/filter")
+def get_filtered_quotes():
+   args = request.args
+   result = []
+   author = args.get("author", default="", type=str)
+   rating = args.get("rating", default=0, type=int)
+   for quote in quotes:
+      # Поиск по автору по части строки регистронезависимый
+      if author:
+         if author.lower() not in quote["author"].lower():
+            continue
+      # Поиск по рейтингу
+      if rating:
+         if quote["rating"] != rating:
+            continue         
+      result.append(quote)
+   if result:
+      return result, 200
+   return {"error": f"Цитаты c указанными фильтрами не найдены"}, 404
+   
+
 if __name__ == "__main__":
    app.run(debug=True)
 
