@@ -65,7 +65,6 @@ def get_new_quote_id():
 @app.route("/quotes/<int:id>", methods=['GET'])
 def get_quote(id):
    print("GET id = ", id)
-   quote = list(filter(lambda x: x["id"] == id, quotes))
    for quote in quotes:
       if quote["id"] == id:
          return quote, 200
