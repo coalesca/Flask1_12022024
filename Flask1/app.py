@@ -62,6 +62,16 @@ def create_quote():
 def get_new_quote_id():
    return quotes[-1]["id"] + 1
 
+@app.route("/quotes/<int:id>", methods=['GET'])
+def get_quote(id):
+   print("GET id = ", id)
+   quote = list(filter(lambda x: x["id"] == id, quotes))
+   if not quote:
+      return {"error": f"Цитата c {id=} не найдена"}, 404
+   if len(quote) > 1:
+      return {"error": "Найдено несколько соответствий"}, 500
+   return quote[0], 200
+
 if __name__ == "__main__":
    app.run(debug=True)
 
