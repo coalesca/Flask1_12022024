@@ -76,7 +76,10 @@ def edit_quote(id):
    new_data = request.json
    for quote in quotes:
       if quote["id"] == id:
-         quote["text"] = new_data["text"]
+         if "text" in new_data.keys():
+            quote["text"] = new_data["text"]
+         if "author" in new_data.keys():
+            quote["author"] = new_data["author"]
          return quote, 200
    return {"error": f"Цитата c {id=} не найдена"}, 404
    
