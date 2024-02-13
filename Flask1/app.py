@@ -1,4 +1,5 @@
 from flask import Flask
+from flask import request
 
 app = Flask(__name__)
 app.config['JSON_AS_ASCII'] = False
@@ -45,6 +46,21 @@ def about():
 @app.route("/quotes")
 def get_quotes():
    return quotes
+
+@app.route("/quotes", methods=['POST'])
+def create_quote():
+   data = request.json
+   print("data = ", data)
+   new_quote = {
+                  "id": get_new_quote_id(),
+                  "author": data["author"],
+                  "text": data["text"]
+               }
+   quotes.append(new_quote)
+   return new_quote, 201
+
+def get_new_quote_id():
+   return quotes[-1]["id"] + 1
 
 if __name__ == "__main__":
    app.run(debug=True)
