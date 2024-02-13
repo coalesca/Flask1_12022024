@@ -82,6 +82,14 @@ def edit_quote(id):
             quote["author"] = new_data["author"]
          return quote, 200
    return {"error": f"Цитата c {id=} не найдена"}, 404
+
+@app.route("/quotes/<int:id>", methods=['DELETE'])
+def delete(id):
+   for quote in quotes:
+      if quote["id"] == id:
+         quotes.remove(quote)
+         return f"Quote with id {id} is deleted.", 200
+   return {"error": f"Цитата c {id=} не найдена"}, 404
    
 
 if __name__ == "__main__":
