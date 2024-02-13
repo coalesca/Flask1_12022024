@@ -66,11 +66,20 @@ def get_new_quote_id():
 def get_quote(id):
    print("GET id = ", id)
    quote = list(filter(lambda x: x["id"] == id, quotes))
-   if not quote:
-      return {"error": f"Цитата c {id=} не найдена"}, 404
-   if len(quote) > 1:
-      return {"error": "Найдено несколько соответствий"}, 500
-   return quote[0], 200
+   for quote in quotes:
+      if quote["id"] == id:
+         return quote, 200
+   return {"error": f"Цитата c {id=} не найдена"}, 404
+
+@app.route("/quotes/<int:id>", methods=['PUT'])
+def edit_quote(id):
+   new_data = request.json
+   for quote in quotes:
+      if quote["id"] == id:
+         quote["text"] = new_data["text"]
+         return quote, 200
+   return {"error": f"Цитата c {id=} не найдена"}, 404
+   
 
 if __name__ == "__main__":
    app.run(debug=True)
