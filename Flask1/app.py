@@ -90,6 +90,9 @@ def delete(id):
          return f"Quote with id {id} is deleted.", 200
    return {"error": f"Цитата c {id=} не найдена"}, 404
    
+@app.route("/quotes/count")
+def get_quotes_count():
+   return {"count": len(quotes)}, 200
 
 if __name__ == "__main__":
    app.run(debug=True)
