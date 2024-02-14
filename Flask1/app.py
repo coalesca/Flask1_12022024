@@ -121,7 +121,7 @@ def get_quote_by_id(quote_id):
 def edit_quote(quote_id):
    new_data = request.json
    attribute_list = ["author", "text"]
-   if "rating" in new_data and new_data["rating"] not in range(1, 6):
+   if "rating" in new_data and "rating" in attribute_list and new_data["rating"] not in range(1, 6):
    # Валидируем новое значение рейтинга, в случае успеха обновляем
       attribute_list.remove("rating")
    update_quotes = f"UPDATE quotes SET {', '.join(list(attr + '=?' for attr in attribute_list))} WHERE id = ?"
@@ -131,7 +131,6 @@ def edit_quote(quote_id):
    cursor = connection.cursor()
    cursor.execute(update_quotes, params)  
    rows = cursor.rowcount
-   print(rows)
    if rows:
       connection.commit()
       cursor.close()         
@@ -142,13 +141,21 @@ def edit_quote(quote_id):
    connection.rollback()
    abort(404)
 
-@app.route("/quotes/<int:id>", methods=['DELETE'])
-def delete_quote(id):
-   for quote in quotes:
-      if quote["id"] == id:
-         quotes.remove(quote)
-         return jsonify({"message": f"Quote with id {id} is deleted."}), 200
-   return {"error": f"Цитата c {id=} не найдена"}, 404
+@app.route("/quotes/<int:quote_id>", methods=['DELETE'])
+def delete_quote(quote_id):
+   delete_quotes = f"DELETE FROM quotes WHERE id = ?"
+   params = (quote_id,)
+   # print(delete_quotes, params)
+   connection = get_db()
+   cursor = connection.cursor()
+   cursor.execute(delete_quotes, params)  
+   rows = cursor.rowcount
+   if rows:
+      connection.commit()
+      cursor.close()         
+      return jsonify({"message": f"Quote with id {quote_id} is deleted."}), 200
+   connection.rollback()
+   abort(404)
    
 @app.route("/quotes/count")
 def get_quotes_count():
