@@ -93,6 +93,7 @@ def create_quote():
    attribute_list = ["author", "text"]
    insert_quotes = f"INSERT INTO quotes({', '.join(attribute_list)}) VALUES ({', '.join(list('?' for _ in range(len(attribute_list))))})"
    params = tuple(data.get(attr) for attr in attribute_list)
+   # print(insert_quotes, params)
    connection = get_db()
    cursor = connection.cursor()
    cursor.execute(insert_quotes, params)
@@ -105,9 +106,6 @@ def create_quote():
       return response, code
    abort(507)
 
-def get_new_quote_id():
-   return quotes[-1]["id"] + 1
-
 @app.route("/quotes/<int:quote_id>", methods=['GET'])
 def get_quote_by_id(quote_id):
    # Получение данных из БД
@@ -119,21 +117,30 @@ def get_quote_by_id(quote_id):
       return jsonify(quotes_db), 200
    abort(404)
 
-@app.route("/quotes/<int:id>", methods=['PUT'])
-def edit_quote(id):
+@app.route("/quotes/<int:quote_id>", methods=['PUT'])
+def edit_quote(quote_id):
    new_data = request.json
-   for quote in quotes:
-      if quote["id"] == id:
-         if "text" in new_data.keys():
-            quote["text"] = new_data["text"]
-         if "author" in new_data.keys():
-            quote["author"] = new_data["author"]
-         if "rating" in new_data.keys():
-            # Валидируем новое значение рейтинга, в случае успеха обновляем
-            if (new_rating := new_data["rating"]) >= 1 and new_rating <= 5:
-               quote["rating"] = new_rating            
-         return quote, 200
-   return {"error": f"Цитата c {id=} не найдена"}, 404
+   attribute_list = ["author", "text"]
+   if "rating" in new_data and new_data["rating"] not in range(1, 6):
+   # Валидируем новое значение рейтинга, в случае успеха обновляем
+      attribute_list.remove("rating")
+   update_quotes = f"UPDATE quotes SET {', '.join(list(attr + '=?' for attr in attribute_list))} WHERE id = ?"
+   params = (*list(new_data.get(attr) for attr in attribute_list), quote_id)
+   # print(update_quotes, params)
+   connection = get_db()
+   cursor = connection.cursor()
+   cursor.execute(update_quotes, params)  
+   rows = cursor.rowcount
+   print(rows)
+   if rows:
+      connection.commit()
+      cursor.close()         
+      # Возвращаем обновлённую цитату по quote_id, переиспользуем функцию для get
+      response, code = get_quote_by_id(quote_id)
+      if code == 200:
+         return response, code
+   connection.rollback()
+   abort(404)
 
 @app.route("/quotes/<int:id>", methods=['DELETE'])
 def delete_quote(id):
