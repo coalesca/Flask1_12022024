@@ -112,19 +112,14 @@ def get_new_quote_id():
    return quotes[-1]["id"] + 1
 
 @app.route("/quotes/<int:quote_id>", methods=['GET'])
-def get_quote(quote_id):
+def get_quote_by_id(quote_id):
    # Получение данных из БД
    select_quotes = "SELECT * from quotes WHERE id = ?"
-   db = get_db()
-   cursor = db.cursor()
+   cursor = get_db().cursor()
    cursor.execute(select_quotes, (quote_id,))
    quotes_db = cursor.fetchone() # tuple
-   
    if quotes_db:
-      # Подготовка данных для возврата
-      # Необходимо выполнить преобразование:
-      # tuple -> dict
-      return quotes_db
+      return jsonify(quotes_db), 200
    abort(404)
 
 @app.route("/quotes/<int:id>", methods=['PUT'])
