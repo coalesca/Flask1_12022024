@@ -1,5 +1,5 @@
 from flask import Flask
-from flask import request
+from flask import request, jsonify
 from random import choice
 
 app = Flask(__name__)
@@ -93,11 +93,11 @@ def edit_quote(id):
    return {"error": f"Цитата c {id=} не найдена"}, 404
 
 @app.route("/quotes/<int:id>", methods=['DELETE'])
-def delete(id):
+def delete_quote(id):
    for quote in quotes:
       if quote["id"] == id:
          quotes.remove(quote)
-         return {"error": f"Quote with id {id} is deleted."}, 200
+         return jsonify({"message": f"Quote with id {id} is deleted."}), 200
    return {"error": f"Цитата c {id=} не найдена"}, 404
    
 @app.route("/quotes/count")
