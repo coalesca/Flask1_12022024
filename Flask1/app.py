@@ -1,6 +1,5 @@
 from flask import Flask
 from flask import request, jsonify, g, abort
-from random import choice
 from pathlib import Path
 import sqlite3
 from werkzeug.exceptions import HTTPException
@@ -11,39 +10,6 @@ app.config['JSON_AS_ASCII'] = False
 BASE_DIR = Path(__file__).parent
 DATABASE = BASE_DIR / "test.db"
 
-about_me = {
-   "name": "Вадим",
-   "surname": "Шиховцов",
-   "email": "vshihovcov@specialist.ru"
-}
-
-quotes = [
-   {
-       "id": 3,
-       "author": "Rick Cook",
-       "text": "Программирование сегодня — это гонка разработчиков программ, стремящихся писать программы с большей и лучшей идиотоустойчивостью, и вселенной, которая пытается создать больше отборных идиотов. Пока вселенная побеждает.",
-       "rating": 1
-   },
-   {
-       "id": 5,
-       "author": "Waldi Ravens",
-       "text": "Программирование на С похоже на быстрые танцы на только что отполированном полу людей с острыми бритвами в руках.",
-       "rating": 2
-   },
-   {
-       "id": 6,
-       "author": "Mosher’s Law of Software Engineering",
-       "text": "Не волнуйтесь, если что-то не работает. Если бы всё работало, вас бы уволили.",
-       "rating": 4
-   },
-   {
-       "id": 8,
-       "author": "Yoggi Berra",
-       "text": "В теории, теория и практика неразделимы. На практике это не так.",
-       "rating": 5
-   },
-
-]
 
 def get_db():
    db = getattr(g, '_database', None)
@@ -74,6 +40,11 @@ def hello_world():
 
 @app.route("/about")
 def about():
+   about_me = {
+   "name": "Вадим",
+   "surname": "Шиховцов",
+   "email": "vshihovcov@specialist.ru"
+   }
    return about_me
 
 @app.route("/quotes")
@@ -159,32 +130,50 @@ def delete_quote(quote_id):
    
 @app.route("/quotes/count")
 def get_quotes_count():
-   return {"count": len(quotes)}, 200
+   # Получение данных из БД
+   select_quote = "SELECT count(*) as count from quotes"
+   cursor = get_db().cursor()
+   cursor.execute(select_quote)
+   quote_db = cursor.fetchone()
+   if quote_db:
+      return jsonify(quote_db), 200
+   abort(404)
 
 @app.route("/quotes/random")
 def get_random_quote():
-   return choice(quotes), 200
+   # Получение данных из БД
+   select_quote = "SELECT * from quotes ORDER BY RANDOM() LIMIT 1"
+   cursor = get_db().cursor()
+   cursor.execute(select_quote)
+   quote_db = cursor.fetchone()
+   if quote_db:
+      return jsonify(quote_db), 200
+   abort(404)
 
 @app.route("/quotes/filter")
 def get_filtered_quotes():
    args = request.args
-   result = []
    author = args.get("author", default="", type=str)
    rating = args.get("rating", default=0, type=int)
-   for quote in quotes:
-      # Поиск по автору по части строки регистронезависимый
-      if author:
-         if author.lower() not in quote["author"].lower():
-            continue
-      # Поиск по рейтингу
-      if rating:
-         if quote["rating"] != rating:
-            continue         
-      result.append(quote)
-   if result:
-      return result, 200
-   return {"error": f"Цитаты c указанными фильтрами не найдены"}, 404
-   
+
+   attribute_list = ["author", "text"]
+   select_quotes = f"SELECT * FROM quotes \n WHERE 1 = 1"
+   params = []
+
+   if author and "author" in attribute_list:
+      select_quotes += f"\n AND author like ?"
+      params.append(f"%{author}%")
+   if rating and "rating" in attribute_list:
+      select_quotes += f"\n AND rating = ?"
+      params.append(rating)
+
+   # print(select_quotes, tuple(params))
+   cursor = get_db().cursor()
+   cursor.execute(select_quotes, tuple(params))
+   quotes_db = cursor.fetchall() # list[tuple]
+   if quotes_db:
+      return jsonify(quotes_db), 200
+   abort(404)
 
 if __name__ == "__main__":
    app.run(debug=True)
