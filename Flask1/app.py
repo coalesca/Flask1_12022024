@@ -1,8 +1,9 @@
 from flask import Flask
-from flask import request, jsonify, g
+from flask import request, jsonify, g, abort
 from random import choice
 from pathlib import Path
 import sqlite3
+from werkzeug.exceptions import HTTPException
 
 app = Flask(__name__)
 app.config['JSON_AS_ASCII'] = False
@@ -45,16 +46,27 @@ quotes = [
 ]
 
 def get_db():
-    db = getattr(g, '_database', None)
-    if db is None:
-        db = g._database = sqlite3.connect(DATABASE)
-    return db
+   db = getattr(g, '_database', None)
+   if db is None:
+      db = g._database = sqlite3.connect(DATABASE)
+   
+   def make_dicts(cursor, row):
+      return dict((cursor.description[idx][0], value)
+                  for idx, value in enumerate(row))
+   db.row_factory = make_dicts        
+   return db
+
 
 @app.teardown_appcontext
 def close_connection(exception):
     db = getattr(g, '_database', None)
     if db is not None:
         db.close()
+
+# Обработка ошибок и возврат сообщения в виде JSON
+@app.errorhandler(HTTPException)
+def handle_exception(e):
+    return jsonify({"message": e.description}), e.code
 
 @app.route("/")
 def hello_world():
@@ -99,13 +111,21 @@ def create_quote():
 def get_new_quote_id():
    return quotes[-1]["id"] + 1
 
-@app.route("/quotes/<int:id>", methods=['GET'])
-def get_quote(id):
-   print("GET id = ", id)
-   for quote in quotes:
-      if quote["id"] == id:
-         return quote, 200
-   return {"error": f"Цитата c {id=} не найдена"}, 404
+@app.route("/quotes/<int:quote_id>", methods=['GET'])
+def get_quote(quote_id):
+   # Получение данных из БД
+   select_quotes = "SELECT * from quotes WHERE id = ?"
+   db = get_db()
+   cursor = db.cursor()
+   cursor.execute(select_quotes, (quote_id,))
+   quotes_db = cursor.fetchone() # tuple
+   
+   if quotes_db:
+      # Подготовка данных для возврата
+      # Необходимо выполнить преобразование:
+      # tuple -> dict
+      return quotes_db
+   abort(404)
 
 @app.route("/quotes/<int:id>", methods=['PUT'])
 def edit_quote(id):
