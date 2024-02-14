@@ -83,17 +83,9 @@ def get_quotes():
    cursor = get_db().cursor()
    cursor.execute(select_quotes)
    quotes_db = cursor.fetchall() # list[tuple]
-
-   # Подготовка данных для возврата
-   # Необходимо выполнит преобразование:
-   # list[tuple] -> list[dict]
-   keys = ["id", "author", "text"]
-   quotes = []
-   for quote_db in quotes_db:
-      quote = dict(zip(keys, quote_db))
-      quotes.append(quote)
-
-   return jsonify(quotes), 200
+   if quotes_db:
+      return jsonify(quotes_db), 200
+   abort(404)
 
 @app.route("/quotes", methods=['POST'])
 def create_quote():
