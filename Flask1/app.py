@@ -90,15 +90,20 @@ def get_quotes():
 @app.route("/quotes", methods=['POST'])
 def create_quote():
    data = request.json
-   print("data = ", data)
-   new_quote = {
-                  "id": get_new_quote_id(),
-                  "author": data["author"],
-                  "text": data["text"],
-                  "rating": new_rating if "rating" in data.keys() and (new_rating := data["rating"]) >= 1 and new_rating <= 5 else 1
-               }
-   quotes.append(new_quote)
-   return new_quote, 201
+   attribute_list = ["author", "text"]
+   insert_quotes = f"INSERT INTO quotes({', '.join(attribute_list)}) VALUES ({', '.join(list('?' for _ in range(len(attribute_list))))})"
+   params = tuple(data.get(attr) for attr in attribute_list)
+   connection = get_db()
+   cursor = connection.cursor()
+   cursor.execute(insert_quotes, params)
+   new_id = cursor.lastrowid
+   connection.commit() # Фиксируем транзакцию
+   cursor.close()
+   # Возвращаем созданную цитату по new_id, переиспользуем функцию для get
+   response, code = get_quote_by_id(new_id)
+   if code == 200:
+      return response, code
+   abort(507)
 
 def get_new_quote_id():
    return quotes[-1]["id"] + 1
