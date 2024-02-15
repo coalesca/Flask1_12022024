@@ -56,6 +56,51 @@ def get_quotes():
    
    return jsonify(quotes), 200
 
+@app.get("/quotes/<int:quote_id>")
+def get_quote_by_id(quote_id):
+   quote = QuoteModel.query.get(quote_id)
+   if quote:
+      return jsonify(quote.to_dict()), 200
+   abort(404)
+
+@app.post("/quotes")
+def create_quote():
+   data = request.json
+   author = data.get("author")
+   text = data.get("text")
+   quote = QuoteModel(author=author, text=text)
+   db.session.add(quote)
+   try:
+      db.session.commit()
+      return jsonify(quote.to_dict()), 200
+   except:
+      abort(500)
+
+@app.put("/quotes/<int:quote_id>")
+def edit_quote(quote_id):
+   new_data = request.json
+   quote = QuoteModel.query.get(quote_id)
+   if not quote:
+      abort(404)
+   quote.author = new_data.get("author") if new_data.get("author") else quote.author
+   quote.text = new_data.get("text") if new_data.get("text") else quote.text
+   try:
+      db.session.commit()
+      return jsonify(quote.to_dict()), 200
+   except:
+      abort(500)
+
+@app.delete("/quotes/<int:quote_id>")
+def delete_quote(quote_id):
+   quote = QuoteModel.query.get(quote_id)
+   if not quote:
+      abort(404)
+   db.session.delete(quote)
+   try:
+      db.session.commit()
+      return jsonify(message=f"Quote with id = {quote_id} deleted successfully"), 200
+   except:
+      abort(500)
 
 if __name__ == "__main__":
    app.run(debug=True)
