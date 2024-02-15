@@ -61,7 +61,8 @@ def get_quotes():
 @app.route("/quotes", methods=['POST'])
 def create_quote():
    data = request.json
-   attribute_list = ["author", "text"]
+   attribute_list = list({"author", "text"} & set(data.keys()))
+
    insert_quotes = f"INSERT INTO quotes({', '.join(attribute_list)}) VALUES ({', '.join(list('?' for _ in range(len(attribute_list))))})"
    params = tuple(data.get(attr) for attr in attribute_list)
    # print(insert_quotes, params)
@@ -91,7 +92,7 @@ def get_quote_by_id(quote_id):
 @app.route("/quotes/<int:quote_id>", methods=['PUT'])
 def edit_quote(quote_id):
    new_data = request.json
-   attribute_list = ["author", "text"]
+   attribute_list = list({"author", "text"} & set(new_data.keys()))
    if "rating" in new_data and "rating" in attribute_list and new_data["rating"] not in range(1, 6):
    # Валидируем новое значение рейтинга, в случае успеха обновляем
       attribute_list.remove("rating")
@@ -156,7 +157,7 @@ def get_filtered_quotes():
    author = args.get("author", default="", type=str)
    rating = args.get("rating", default=0, type=int)
 
-   attribute_list = ["author", "text"]
+   attribute_list = list({"author", "text"} & set(args.keys()))
    select_quotes = f"SELECT * FROM quotes \n WHERE 1 = 1"
    params = []
 
