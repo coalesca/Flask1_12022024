@@ -12,7 +12,7 @@ DATABASE = BASE_DIR / "test.db"
 
 app = Flask(__name__)
 app.config['JSON_AS_ASCII'] = False
-app.config['SQLALCHEMY_DATABASE_URI'] = f"sqlite:///{BASE_DIR / 'main.db'}"
+app.config['SQLALCHEMY_DATABASE_URI'] = f"sqlite:///{BASE_DIR / 'quotes.db'}"
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 
 # app.config['SQLALCHEMY_ECHO'] = True
@@ -21,15 +21,33 @@ db = SQLAlchemy(app)
 migrate = Migrate(app, db)
 
 
+class AuthorModel(db.Model):
+   __tablename__ = "authors"
+   id = db.Column(db.Integer, primary_key=True)
+   name = db.Column(db.String(302), unique=True, nullable=False)
+   quotes = db.relationship('QuoteModel', backref='author', lazy='dynamic', cascade="all, delete-orphan")
+
+   def __init__(self, name):
+       self.name = name
+
+   def __repr__(self):
+      return f"Author({self.name})"
+   
+   def to_dict(self):
+      return {
+         "id": self.id,
+         "name": self.name
+      }
+
 class QuoteModel(db.Model):
    __tablename__ = "quotes"
    id = db.Column(db.Integer, primary_key=True)
-   author = db.Column(db.String(32), unique=False, nullable=False)
+   author_id = db.Column(db.Integer, db.ForeignKey(AuthorModel.id), nullable=False)
    text = db.Column(db.String(255), unique=False, nullable=False)
    rating = db.Column(db.Integer, unique=False, default=1)
 
-   def __init__(self, author, text, rating = 1):
-       self.author = author
+   def __init__(self, author: AuthorModel, text, rating = 1):
+       self.author_id = author.id
        self.text  = text
        self.rating = rating
       
@@ -39,7 +57,7 @@ class QuoteModel(db.Model):
    def to_dict(self):
       return {
          "id": self.id,
-         "author": self.author,
+         "author_id": self.author_id,
          "text": self.text,
          "rating": self.rating
       }
@@ -61,6 +79,24 @@ def close_connection(exception):
     if db is not None:
         db.close()
 
+@app.route("/authors", methods=["POST"])
+def create_author():
+       author_data = request.json
+       author = AuthorModel(author_data.get("name", "Ivan"))
+       db.session.add(author)
+       db.session.commit()
+       return author.to_dict(), 201
+
+@app.route("/authors/<int:author_id>/quotes", methods=["POST"])
+def create_quote(author_id):
+   author = AuthorModel.query.get(author_id)
+   data = request.json
+   new_quote = QuoteModel(author, data.get("text", "text"))
+   db.session.add(new_quote)
+   db.session.commit()
+   return new_quote.to_dict(), 201
+
+
 @app.route("/quotes")
 def get_quotes():
    """Сериализация: list[quotes] -> list[dict] -> str(JSON)"""
@@ -78,21 +114,21 @@ def get_quote_by_id(quote_id):
       return jsonify(quote.to_dict()), 200
    abort(404)
 
-@app.post("/quotes")
-def create_quote():
-   data = request.json
-   author = data.get("author")
-   text = data.get("text")
-   rating = data.get("rating")
-   if not rating or not QuoteModel.validate_rating(rating):
-      rating = 1
-   quote = QuoteModel(author=author, text=text, rating=rating)
-   db.session.add(quote)
-   try:
-      db.session.commit()
-      return jsonify(quote.to_dict()), 200
-   except:
-      abort(500)
+# @app.post("/quotes")
+# def create_quote():
+#    data = request.json
+#    author = data.get("author")
+#    text = data.get("text")
+#    rating = data.get("rating")
+#    if not rating or not QuoteModel.validate_rating(rating):
+#       rating = 1
+#    quote = QuoteModel(author=author, text=text, rating=rating)
+#    db.session.add(quote)
+#    try:
+#       db.session.commit()
+#       return jsonify(quote.to_dict()), 200
+#    except:
+#       abort(500)
 
 @app.put("/quotes/<int:quote_id>")
 def edit_quote(quote_id):
@@ -151,7 +187,7 @@ def get_filtered_quotes():
    # if rating:
    #    query = query.filter_by(rating=rating)
    # quotes_db = query.all()
-   
+
    # Универсальное решение  
    quotes_db = QuoteModel.query.filter_by(**args).all()
    
