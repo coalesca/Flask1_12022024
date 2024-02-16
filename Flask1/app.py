@@ -15,6 +15,8 @@ app.config['JSON_AS_ASCII'] = False
 app.config['SQLALCHEMY_DATABASE_URI'] = f"sqlite:///{BASE_DIR / 'main.db'}"
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 
+app.config['SQLALCHEMY_ECHO'] = True
+
 db = SQLAlchemy(app)
 migrate = Migrate(app, db)
 
@@ -22,8 +24,8 @@ migrate = Migrate(app, db)
 class QuoteModel(db.Model):
    __tablename__ = "quotes"
    id = db.Column(db.Integer, primary_key=True)
-   author = db.Column(db.String(32), unique=False)
-   text = db.Column(db.String(255), unique=False)
+   author = db.Column(db.String(32), unique=False, nullable=False)
+   text = db.Column(db.String(255), unique=False, nullable=False)
    rating = db.Column(db.Integer, unique=False, default=1)
 
    def __init__(self, author, text, rating = 1):
