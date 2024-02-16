@@ -15,7 +15,7 @@ app.config['JSON_AS_ASCII'] = False
 app.config['SQLALCHEMY_DATABASE_URI'] = f"sqlite:///{BASE_DIR / 'main.db'}"
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 
-app.config['SQLALCHEMY_ECHO'] = True
+# app.config['SQLALCHEMY_ECHO'] = True
 
 db = SQLAlchemy(app)
 migrate = Migrate(app, db)
@@ -140,15 +140,21 @@ def get_quotes_count():
 @app.get("/quotes/filter")
 def get_filtered_quotes():
    args = request.args
-   author = args.get("author", default="", type=str)
-   rating = args.get("rating", default=0, type=int)
-   query = QuoteModel.query
-   if author:
-      query = query.filter(QuoteModel.author.contains(author))
-   if rating:
-      query = query.filter_by(rating=rating)
    
-   quotes_db = query.all()
+   # Частный случай
+   # author = args.get("author", default="", type=str)
+   # rating = args.get("rating", default=0, type=int)
+     
+   # query = QuoteModel.query
+   # if author:
+   #    query = query.filter(QuoteModel.author.contains(author))
+   # if rating:
+   #    query = query.filter_by(rating=rating)
+   # quotes_db = query.all()
+   
+   # Универсальное решение  
+   quotes_db = QuoteModel.query.filter_by(**args).all()
+   
    if quotes_db:
       quotes = []
       for quote in quotes_db:
