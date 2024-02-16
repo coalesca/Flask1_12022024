@@ -5,6 +5,7 @@ from werkzeug.exceptions import HTTPException
 from flask_sqlalchemy import SQLAlchemy
 from sqlalchemy.sql import func
 from pathlib import Path
+from flask_migrate import Migrate
 
 BASE_DIR = Path(__file__).parent
 DATABASE = BASE_DIR / "test.db"
@@ -15,6 +16,8 @@ app.config['SQLALCHEMY_DATABASE_URI'] = f"sqlite:///{BASE_DIR / 'main.db'}"
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 
 db = SQLAlchemy(app)
+migrate = Migrate(app, db)
+
 
 class QuoteModel(db.Model):
    __tablename__ = "quotes"
