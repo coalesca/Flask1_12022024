@@ -79,21 +79,23 @@ def close_connection(exception):
     if db is not None:
         db.close()
 
-@app.post("/authors")
-def create_author():
-      author_data = request.json
-      author = AuthorModel(author_data.get("name", "Ivan"))
-      db.session.add(author)
-      db.session.commit()
-      return author.to_dict(), 201
-
-@app.get("/authors")
-def get_authors():
-      authors = AuthorModel.query
-      authors_dict = []
-      for author in authors:
-         authors_dict.append(author.to_dict())
-      return jsonify(authors_dict), 200       
+@app.route("/authors", methods=["GET", "POST"])
+def handle_authors():
+      if request.method == "GET":
+         authors = AuthorModel.query.all()
+         authors_dict = []
+         for author in authors:
+            authors_dict.append(author.to_dict())
+         return jsonify(authors_dict), 200       
+      if request.method == "POST":
+         author_data = request.json
+         author = AuthorModel(author_data.get("name", "Ivan"))
+         db.session.add(author)
+         try:
+            db.session.commit()
+            return author.to_dict(), 201
+         except:
+            abort(400, "UNIQUE constraint failed")   
 
 @app.get("/authors/<int:author_id>")
 def get_author(author_id):
@@ -136,7 +138,7 @@ def create_quote(author_id):
    if not author:
       abort(404, f"Author with id = {author_id} not found")
    data = request.json
-   new_quote = QuoteModel(**data)
+   new_quote = QuoteModel(author=author, **data)
    db.session.add(new_quote)
    try:
       db.session.commit()
