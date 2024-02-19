@@ -151,6 +151,36 @@ def handle_quotes_by_author(author_id):
       except:       
          abort(400, "NOT NULL constraint failed")
 
+@app.route("/quotes/<int:quote_id>", methods=["GET", "PUT", "DELETE"])
+def handle_quote_by_id(quote_id):
+      quote = QuoteModel.query.get(quote_id)
+      if not quote:
+         abort(404, f"Quote with id={quote_id} not found")
+      
+      if request.method == "GET":
+         return jsonify(quote.to_dict()), 200
+
+      if request.method == "PUT":
+         new_data = request.json
+         # Универсальный случай
+         for key, value in new_data.items():
+            if key == "rating" and not quote.validate_rating(value):
+               continue
+            setattr(quote, key, value)       
+         try:
+            db.session.commit()
+            return jsonify(quote.to_dict()), 200
+         except:
+            abort(400, f"Database commit operation failed.") 
+
+      if request.method == "DELETE":
+         db.session.delete(quote)
+         try:
+            db.session.commit()
+            return jsonify(message=f"Quote with id={quote_id} deleted successfully"), 200
+         except:
+            abort(400, f"Database commit operation failed.")  
+
 @app.route("/quotes")
 def get_quotes():
    """Сериализация: list[quotes] -> list[dict] -> str(JSON)"""
@@ -160,13 +190,6 @@ def get_quotes():
       quotes.append(quote.to_dict())
    
    return jsonify(quotes), 200
-
-@app.get("/quotes/<int:quote_id>")
-def get_quote_by_id(quote_id):
-   quote = QuoteModel.query.get(quote_id)
-   if quote:
-      return jsonify(quote.to_dict()), 200
-   abort(404, f"Quote with id = {quote_id} not found")
 
 # @app.post("/quotes")
 # def create_quote():
@@ -184,34 +207,6 @@ def get_quote_by_id(quote_id):
 #    except:
 #       abort(500)
 
-@app.put("/quotes/<int:quote_id>")
-def edit_quote(quote_id):
-   new_data = request.json
-   quote = QuoteModel.query.get(quote_id)
-   if not quote:
-      abort(404)
-   quote.author = new_data.get("author") if new_data.get("author") else quote.author
-   quote.text = new_data.get("text") if new_data.get("text") else quote.text
-   rating = new_data.get("rating")
-   if rating and quote.validate_rating(rating):
-      quote.rating = rating
-   try:
-      db.session.commit()
-      return jsonify(quote.to_dict()), 200
-   except:
-      abort(500)
-
-@app.delete("/quotes/<int:quote_id>")
-def delete_quote(quote_id):
-   quote = QuoteModel.query.get(quote_id)
-   if not quote:
-      abort(404)
-   db.session.delete(quote)
-   try:
-      db.session.commit()
-      return jsonify(message=f"Quote with id = {quote_id} deleted successfully"), 200
-   except:
-      abort(500)
 
 @app.get("/quotes/random")
 def get_random_quote():
