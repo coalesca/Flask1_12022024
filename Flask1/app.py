@@ -63,11 +63,18 @@ class QuoteModel(db.Model):
       }
 
 
-def validate(in_data):
+def validate(in_data: dict, method="POST") -> dict:
    rating = in_data.setdefault("rating", 1)
    if rating not in range(1,6):
-      in_data["rating"] = 1
-   in_data.setdefault("text", "text")
+      if method == "POST":
+         in_data["rating"] = 1
+      if method == "PUT":
+         in_data.pop("rating")
+   text = in_data.setdefault("text", "text")
+
+   if text == "text" and method == "PUT":
+      in_data.pop("text")
+
    return in_data
    
 # Обработка ошибок и возврат сообщения в виде JSON
@@ -145,7 +152,7 @@ def handle_quotes_by_author(author_id):
 
    if request.method == "POST":
       data = request.json
-      data = validate(data)
+      data = validate(data, "POST")
       new_quote = QuoteModel(author=author, **data)
       db.session.add(new_quote)
       try:
@@ -165,7 +172,7 @@ def handle_quote_by_id(quote_id):
 
       if request.method == "PUT":
          new_data = request.json
-         new_data = validate(new_data)         
+         new_data = validate(new_data, "PUT")         
          # Универсальный случай
          for key, value in new_data.items():
             setattr(quote, key, value)       
