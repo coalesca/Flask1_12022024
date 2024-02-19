@@ -79,17 +79,27 @@ def close_connection(exception):
     if db is not None:
         db.close()
 
-@app.route("/authors", methods=["POST"])
+@app.post("/authors")
 def create_author():
-       author_data = request.json
-       author = AuthorModel(author_data.get("name", "Ivan"))
-       db.session.add(author)
-       db.session.commit()
-       return author.to_dict(), 201
+      author_data = request.json
+      author = AuthorModel(author_data.get("name", "Ivan"))
+      db.session.add(author)
+      db.session.commit()
+      return author.to_dict(), 201
 
-@app.route("/authors/<int:author_id>/quotes", methods=["POST"])
+@app.get("/authors")
+def create_author():
+      authors = AuthorModel.query
+      authors_dict = []
+      for author in authors:
+         authors_dict.append(author.to_dict())
+      return jsonify(authors_dict), 200       
+
+@app.post("/authors/<int:author_id>/quotes")
 def create_quote(author_id):
    author = AuthorModel.query.get(author_id)
+   if not author:
+      abort(404, f"Author with id = {author_id} not found")
    data = request.json
    new_quote = QuoteModel(author, data.get("text", "text"))
    db.session.add(new_quote)
