@@ -119,7 +119,7 @@ def edit_author(author_id):
       abort(400, f"Database commit operation failed.")
 
 @app.delete("/authors/<int:author_id>")
-def edit_author(author_id):
+def delete_author(author_id):
    author = AuthorModel.query.get(author_id)
    if not author:
       abort(404, f"Author with id = {author_id} not found")
