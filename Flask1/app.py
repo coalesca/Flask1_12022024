@@ -88,12 +88,47 @@ def create_author():
       return author.to_dict(), 201
 
 @app.get("/authors")
-def create_author():
+def get_authors():
       authors = AuthorModel.query
       authors_dict = []
       for author in authors:
          authors_dict.append(author.to_dict())
       return jsonify(authors_dict), 200       
+
+@app.get("/authors/<int:author_id>")
+def get_author(author_id):
+      author = AuthorModel.query.get(author_id)
+      if author:
+         return jsonify(author.to_dict()), 200
+      abort(404, f"Author with id = {author_id} not found")
+
+@app.put("/authors/<int:author_id>")
+def edit_author(author_id):
+   new_data = request.json
+   author = AuthorModel.query.get(author_id)
+   if not author:
+      abort(404, f"Author with id = {author_id} not found")
+   
+    # Универсальный случай
+   for key, value in new_data.items():
+      setattr(author, key, value)
+   try:
+      db.session.commit()
+      return jsonify(author.to_dict()), 200
+   except:
+      abort(400, f"Database commit operation failed.")
+
+@app.delete("/authors/<int:author_id>")
+def edit_author(author_id):
+   author = AuthorModel.query.get(author_id)
+   if not author:
+      abort(404, f"Author with id = {author_id} not found")
+   db.session.delete(author)
+   try:
+      db.session.commit()
+      return jsonify(message=f"Author with id = {r} deleted successfully"), 200
+   except:
+      abort(400, f"Database commit operation failed.")
 
 @app.post("/authors/<int:author_id>/quotes")
 def create_quote(author_id):
@@ -101,11 +136,13 @@ def create_quote(author_id):
    if not author:
       abort(404, f"Author with id = {author_id} not found")
    data = request.json
-   new_quote = QuoteModel(author, data.get("text", "text"))
+   new_quote = QuoteModel(**data)
    db.session.add(new_quote)
-   db.session.commit()
-   return new_quote.to_dict(), 201
-
+   try:
+      db.session.commit()
+      return jsonify(new_quote.to_dict()), 200
+   except:       
+      abort(400, "NOT NULL constraint failed")
 
 @app.route("/quotes")
 def get_quotes():
@@ -122,7 +159,7 @@ def get_quote_by_id(quote_id):
    quote = QuoteModel.query.get(quote_id)
    if quote:
       return jsonify(quote.to_dict()), 200
-   abort(404)
+   abort(404, f"Quote with id = {quote_id} not found")
 
 # @app.post("/quotes")
 # def create_quote():
