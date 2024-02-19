@@ -115,27 +115,26 @@ def handle_author(author_id):
       if request.method == "GET":
          return jsonify(author.to_dict()), 200
 
+      message = {}
       if request.method == "PUT":
          new_data = request.json
          # Универсальный случай
          for key, value in new_data.items():
             setattr(author, key, value)
-         try:
-            db.session.commit()
-            return jsonify(author.to_dict()), 200
-         except:
-            abort(400, f"Database commit operation failed.") 
+         message = author.to_dict()
 
       if request.method == "DELETE":
          quotes_db = QuoteModel.query.filter_by(author_id=author_id).all()
          for quote in quotes_db:
             db.session.delete(quote)
          db.session.delete(author)
-         try:
-            db.session.commit()
-            return jsonify(message=f"Author with id={author_id} deleted successfully"), 200
-         except:
-            abort(400, f"Database commit operation failed.")      
+         message = {"message": f"Author with id={author_id} deleted successfully"}
+    
+      try:
+         db.session.commit()
+         return jsonify(message), 200
+      except:
+         abort(400, f"Database commit operation failed.") 
 
 @app.route("/authors/<int:author_id>/quotes", methods=["GET", "POST"])
 def handle_quotes_by_author(author_id):
@@ -170,26 +169,25 @@ def handle_quote_by_id(quote_id):
       if request.method == "GET":
          return jsonify(quote.to_dict()), 200
 
+      message = {}
       if request.method == "PUT":
          new_data = request.json
          new_data = validate(new_data, "PUT")         
          # Универсальный случай
          for key, value in new_data.items():
-            setattr(quote, key, value)       
-         try:
-            db.session.commit()
-            return jsonify(quote.to_dict()), 200
-         except:
-            abort(400, f"Database commit operation failed.") 
+            setattr(quote, key, value) 
+         message = quote.to_dict()                  
 
       if request.method == "DELETE":
          db.session.delete(quote)
-         try:
-            db.session.commit()
-            return jsonify(message=f"Quote with id={quote_id} deleted successfully"), 200
-         except:
-            abort(400, f"Database commit operation failed.")  
-
+         message = {"message": f"Quote with id={quote_id} deleted successfully"}
+      
+      try:
+         db.session.commit()
+         return jsonify(message), 200
+      except:
+         abort(400, f"Database commit operation failed.") 
+         
 @app.route("/quotes")
 def get_quotes():
    """Сериализация: list[quotes] -> list[dict] -> str(JSON)"""
