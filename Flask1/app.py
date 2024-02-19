@@ -62,12 +62,14 @@ class QuoteModel(db.Model):
          "rating": self.rating
       }
 
-   @staticmethod
-   def validate_rating(rating):
-      if rating in range(1,6): 
-         return True
-      return False
 
+def validate(in_data):
+   rating = in_data.setdefault("rating", 1)
+   if rating not in range(1,6):
+      in_data["rating"] = 1
+   in_data.setdefault("text", "text")
+   return in_data
+   
 # Обработка ошибок и возврат сообщения в виде JSON
 @app.errorhandler(HTTPException)
 def handle_exception(e):
@@ -143,6 +145,7 @@ def handle_quotes_by_author(author_id):
 
    if request.method == "POST":
       data = request.json
+      data = validate(data)
       new_quote = QuoteModel(author=author, **data)
       db.session.add(new_quote)
       try:
@@ -162,10 +165,9 @@ def handle_quote_by_id(quote_id):
 
       if request.method == "PUT":
          new_data = request.json
+         new_data = validate(new_data)         
          # Универсальный случай
          for key, value in new_data.items():
-            if key == "rating" and not quote.validate_rating(value):
-               continue
             setattr(quote, key, value)       
          try:
             db.session.commit()
