@@ -191,23 +191,6 @@ def get_quotes():
    
    return jsonify(quotes), 200
 
-# @app.post("/quotes")
-# def create_quote():
-#    data = request.json
-#    author = data.get("author")
-#    text = data.get("text")
-#    rating = data.get("rating")
-#    if not rating or not QuoteModel.validate_rating(rating):
-#       rating = 1
-#    quote = QuoteModel(author=author, text=text, rating=rating)
-#    db.session.add(quote)
-#    try:
-#       db.session.commit()
-#       return jsonify(quote.to_dict()), 200
-#    except:
-#       abort(500)
-
-
 @app.get("/quotes/random")
 def get_random_quote():
    quote = QuoteModel.query.order_by(func.random()).limit(1)
