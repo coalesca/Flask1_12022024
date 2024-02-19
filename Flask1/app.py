@@ -125,19 +125,28 @@ def handle_author(author_id):
          except:
             abort(400, f"Database commit operation failed.")      
 
-@app.post("/authors/<int:author_id>/quotes")
-def create_quote(author_id):
+@app.route("/authors/<int:author_id>/quotes", methods=["GET", "POST"])
+def handle_quotes_by_author(author_id):
    author = AuthorModel.query.get(author_id)
    if not author:
       abort(404, f"Author with id = {author_id} not found")
-   data = request.json
-   new_quote = QuoteModel(author=author, **data)
-   db.session.add(new_quote)
-   try:
-      db.session.commit()
-      return jsonify(new_quote.to_dict()), 200
-   except:       
-      abort(400, "NOT NULL constraint failed")
+      
+   if request.method == "GET":
+      quotes_db = QuoteModel.query.filter_by(author_id=author_id).all()
+      quotes_dict = []
+      for quote in quotes_db:
+         quotes_dict.append(quote.to_dict())
+      return jsonify(quotes_dict), 200      
+
+   if request.method == "POST":
+      data = request.json
+      new_quote = QuoteModel(author=author, **data)
+      db.session.add(new_quote)
+      try:
+         db.session.commit()
+         return jsonify(new_quote.to_dict()), 200
+      except:       
+         abort(400, "NOT NULL constraint failed")
 
 @app.route("/quotes")
 def get_quotes():
