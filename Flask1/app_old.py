@@ -3,7 +3,7 @@ from flask import request, jsonify, g, abort
 from pathlib import Path
 import sqlite3
 from werkzeug.exceptions import HTTPException
-
+ 
 app = Flask(__name__)
 app.config['JSON_AS_ASCII'] = False
 
@@ -178,3 +178,4 @@ def get_filtered_quotes():
 if __name__ == "__main__":
    app.run(debug=True)
 
+   # test
