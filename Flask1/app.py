@@ -118,6 +118,9 @@ def handle_author(author_id):
             abort(400, f"Database commit operation failed.") 
 
       if request.method == "DELETE":
+         quotes_db = QuoteModel.query.filter_by(author_id=author_id).all()
+         for quote in quotes_db:
+            db.session.delete(quote)
          db.session.delete(author)
          try:
             db.session.commit()
@@ -130,7 +133,7 @@ def handle_quotes_by_author(author_id):
    author = AuthorModel.query.get(author_id)
    if not author:
       abort(404, f"Author with id = {author_id} not found")
-      
+
    if request.method == "GET":
       quotes_db = QuoteModel.query.filter_by(author_id=author_id).all()
       quotes_dict = []
